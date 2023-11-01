@@ -1,0 +1,15 @@
+allprojects {
+   repositories {
+       google()
+       mavenCentral()
+
+      flatDir {
+      //  dirs '../app/src/main/libs'
+      }
+   }
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation files('libs/SamsungPaySDK_2.18.00_release.jar')
+}
