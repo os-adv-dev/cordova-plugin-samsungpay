@@ -47,17 +47,13 @@ class SamsungPayPlugin : CordovaPlugin() {
     ): Boolean {
 
         if (action == ADD_CARD) {
-            val argServiceId = (args.get(0) as JSONObject).getString("serviceId")
             val argCardInfo = (args.get(0) as JSONObject).getString("cardInfo")
 
-            if (argServiceId.isNullOrBlank()) {
-                val result = JSONObject().apply { setJsonResult("ServiceId argument not found!", false) }
-                callbackContext.error(result)
-            } else if (argCardInfo.isNullOrEmpty()) {
+            if (argCardInfo.isNullOrEmpty()) {
                 val result = JSONObject().apply { setJsonResult("CardIndo argument not found!", false) }
                 callbackContext.error(result)
             } else {
-                this.addCard(callbackContext, argServiceId, argCardInfo)
+                this.addCard(callbackContext, argCardInfo)
             }
 
             return true
@@ -118,7 +114,7 @@ class SamsungPayPlugin : CordovaPlugin() {
         }
     }
 
-    private fun addCard(callbackContext: CallbackContext, serviceId: String, cardInfo: String) {
+    private fun addCard(callbackContext: CallbackContext, cardInfo: String) {
         if (!isSpayReady) {
             val result = JSONObject().apply {
                 put("message", SamsungPayErrors.ADD_CARD_ERROR_INIT.message)
@@ -126,6 +122,7 @@ class SamsungPayPlugin : CordovaPlugin() {
             }
             sendErrorResult(callbackContext, result)
         } else {
+            val serviceId = cordova?.activity?.getString(cordova.activity.resources.getIdentifier("app_service_id", "string", cordova.activity.packageName))
             val partnerInfo = PartnerInfo(serviceId)
             cardManager = CardManager(this.cordova.context, partnerInfo)
             prepareAddCardToWallet(cardManager, callbackContext, cardInfo)
