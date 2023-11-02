@@ -11,12 +11,14 @@
     
     <platform name="android">
 
-        <preference name="APP_SERVICE_ID"/>
+       <!-- <preference name="APP_SERVICE_ID"/>
         <preference name="APP_DEBUG_MODE" default="N"/>
-        <preference name="APP_DEBUG_API_KEY" default=""/>
+        <preference name="APP_DEBUG_API_KEY" default=""/>-->
 
         <!-- Android HOOK tto change strings xml if variable received  -->
-       <!-- <hook type="after_plugin_install" src="hooks/afterPluginInstall.js"/> -->
+       
+       <!-- <hook type="after_plugin_install" src="hooks/afterPluginInstall.js"/>-->
+        <hook type="after_plugin_install" src="hooks/android_add_string.js"/>
         
         <config-file parent="/*" target="res/xml/config.xml">
             <feature name="SamsungPayPlugin">
@@ -71,11 +73,11 @@
 
         <!-- Variables Service ID -->
         
-        <config-file target="res/values/strings.xml" parent="/*">
+       <!-- <config-file target="res/values/strings.xml" parent="/*">
             <string name="app_service_id">$APP_SERVICE_ID</string>
             <string name="app_debug_mode">$APP_DEBUG_MODE</string>
             <string name="app_spay_debug_api_key">$APP_DEBUG_API_KEY</string>
-        </config-file>
+        </config-file>-->
         <!-- End Variables -->
 
     </platform>
