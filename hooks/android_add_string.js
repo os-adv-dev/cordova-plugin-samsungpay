@@ -51,22 +51,18 @@ function addStringToXml() {
             return;
         }
 
-        // Add the new strings values
-        const newValuesEntry = `
-        <string name="app_service_id">${serviceId}</string>
-        <string name="app_debug_mode">${debugMode}</string>
-        <string name="app_spay_debug_api_key">${debugApiKey}</string>
-        `;
-
-        const updatedData = data.replace('</resources>', `    ${newValuesEntry}\n</resources>`);
+        // Replace the values of existing keys
+        data = data.replace(/<string name="app_service_id">[^<]*<\/string>/, `<string name="app_service_id">${serviceId}</string>`);
+        data = data.replace(/<string name="app_debug_mode">[^<]*<\/string>/, `<string name="app_debug_mode">${debugMode}</string>`);
+        data = data.replace(/<string name="app_spay_debug_api_key">[^<]*<\/string>/, `<string name="app_spay_debug_api_key">${debugApiKey}</string>`);
 
         // Write the updated content back to the file
-        fs.writeFile(stringXmlPath, updatedData, 'utf8', function(err) {
+        fs.writeFile(stringXmlPath, data, 'utf8', function(err) {
             if (err) {
                 console.error('Failed to write to strings.xml:', err);
                 return;
             }
-            console.log('Added new values to strings.xml');
+            console.log('Updated values in strings.xml');
         });
     });
 }
