@@ -35,29 +35,43 @@ class SamsungPayPlugin : CordovaPlugin() {
     ): Boolean {
 
         if (action == ADD_CARD) {
-            val argServiceId = (args.get(0) as JSONObject).getString("serviceId")
-            val argCardInfo = (args.get(0) as JSONObject).getString("cardInfo")
+            cordova.threadPool.execute {
+                val argServiceId = (args.get(0) as JSONObject).getString("serviceId")
+                val argCardInfo = (args.get(0) as JSONObject).getString("cardInfo")
 
-            if (argServiceId.isNullOrBlank()) {
-                val result = JSONObject().apply { setJsonResultAddCard("ServiceId argument not found!", false) }
-                callbackContext.error(result)
-            } else if (argCardInfo.isNullOrEmpty()) {
-                val result = JSONObject().apply { setJsonResultAddCard("CardIndo argument not found!", false) }
-                callbackContext.error(result)
-            } else {
-                this.addCard(callbackContext, argServiceId, argCardInfo)
+                if (argServiceId.isNullOrBlank()) {
+                    val result = JSONObject().apply {
+                        setJsonResultAddCard(
+                            "ServiceId argument not found!",
+                            false
+                        )
+                    }
+                    callbackContext.error(result)
+                } else if (argCardInfo.isNullOrEmpty()) {
+                    val result = JSONObject().apply {
+                        setJsonResultAddCard(
+                            "CardIndo argument not found!",
+                            false
+                        )
+                    }
+                    callbackContext.error(result)
+                } else {
+                    this.addCard(callbackContext, argServiceId, argCardInfo)
+                }
             }
 
             return true
         }
 
         if (action == CHECK_DEVICE_SUPPORT) {
-            val data: String = args.getString(0)
-            if (data.isNotEmpty()) {
-                serviceId = data
-                this.checkDeviceSupport(callbackContext)
-            } else {
-                callbackContext.error("ServiceId not found, please provide this argument")
+            cordova.threadPool.execute {
+                val data: String = args.getString(0)
+                if (data.isNotEmpty()) {
+                    serviceId = data
+                    this.checkDeviceSupport(callbackContext)
+                } else {
+                    callbackContext.error("ServiceId not found, please provide this argument")
+                }
             }
 
             return true
@@ -97,22 +111,29 @@ class SamsungPayPlugin : CordovaPlugin() {
         }
     }
 
-    private fun setCallbackOnSuccessStatusListener(jsonResult: JSONObject, status: Int, callback: CallbackContext) {
-        when(status) {
+    private fun setCallbackOnSuccessStatusListener(
+        jsonResult: JSONObject,
+        status: Int,
+        callback: CallbackContext
+    ) {
+        when (status) {
             SamsungPay.SPAY_NOT_SUPPORTED -> {
                 jsonResult.setJsonResult(SamsungPayErrors.NOT_SUPPORTED.message, false)
                 callback.error(jsonResult)
             }
+
             SamsungPay.SPAY_NOT_ALLOWED_TEMPORALLY -> {
                 jsonResult.setJsonResult(SamsungPayErrors.IS_NOT_ALLOWED.message, false)
                 callback.error(jsonResult)
             }
+
             SamsungPay.SPAY_NOT_READY -> {
                 jsonResult.setJsonResult(SamsungPayErrors.IS_NOT_READY.message, false)
                 callback.error(jsonResult)
             }
+
             SamsungPay.SPAY_READY -> {
-                jsonResult.setJsonResult(SamsungPayErrors.IS_READY.message,  true)
+                jsonResult.setJsonResult(SamsungPayErrors.IS_READY.message, true)
                 callback.success(jsonResult)
             }
         }
