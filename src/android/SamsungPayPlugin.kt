@@ -35,43 +35,29 @@ class SamsungPayPlugin : CordovaPlugin() {
     ): Boolean {
 
         if (action == ADD_CARD) {
-            cordova.threadPool.execute {
-                val argServiceId = (args.get(0) as JSONObject).getString("serviceId")
-                val argCardInfo = (args.get(0) as JSONObject).getString("cardInfo")
+            val argServiceId = (args.get(0) as JSONObject).getString("serviceId")
+            val argCardInfo = (args.get(0) as JSONObject).getString("cardInfo")
 
-                if (argServiceId.isNullOrBlank()) {
-                    val result = JSONObject().apply {
-                        setJsonResultAddCard(
-                            "ServiceId argument not found!",
-                            false
-                        )
-                    }
-                    callbackContext.error(result)
-                } else if (argCardInfo.isNullOrEmpty()) {
-                    val result = JSONObject().apply {
-                        setJsonResultAddCard(
-                            "CardIndo argument not found!",
-                            false
-                        )
-                    }
-                    callbackContext.error(result)
-                } else {
-                    this.addCard(callbackContext, argServiceId, argCardInfo)
-                }
+            if (argServiceId.isNullOrBlank()) {
+                val result = JSONObject().apply { setJsonResult("ServiceId argument not found!", false) }
+                callbackContext.error(result)
+            } else if (argCardInfo.isNullOrEmpty()) {
+                val result = JSONObject().apply { setJsonResult("CardIndo argument not found!", false) }
+                callbackContext.error(result)
+            } else {
+                this.addCard(callbackContext, argServiceId, argCardInfo)
             }
 
             return true
         }
 
         if (action == CHECK_DEVICE_SUPPORT) {
-            cordova.threadPool.execute {
-                val data: String = args.getString(0)
-                if (data.isNotEmpty()) {
-                    serviceId = data
-                    this.checkDeviceSupport(callbackContext)
-                } else {
-                    callbackContext.error("ServiceId not found, please provide this argument")
-                }
+            val data: String = args.getString(0)
+            if (data.isNotEmpty()) {
+                serviceId = data
+                this.checkDeviceSupport(callbackContext)
+            } else {
+                callbackContext.error("ServiceId not found, please provide this argument")
             }
 
             return true
@@ -111,29 +97,22 @@ class SamsungPayPlugin : CordovaPlugin() {
         }
     }
 
-    private fun setCallbackOnSuccessStatusListener(
-        jsonResult: JSONObject,
-        status: Int,
-        callback: CallbackContext
-    ) {
-        when (status) {
+    private fun setCallbackOnSuccessStatusListener(jsonResult: JSONObject, status: Int, callback: CallbackContext) {
+        when(status) {
             SamsungPay.SPAY_NOT_SUPPORTED -> {
                 jsonResult.setJsonResult(SamsungPayErrors.NOT_SUPPORTED.message, false)
                 callback.error(jsonResult)
             }
-
             SamsungPay.SPAY_NOT_ALLOWED_TEMPORALLY -> {
                 jsonResult.setJsonResult(SamsungPayErrors.IS_NOT_ALLOWED.message, false)
                 callback.error(jsonResult)
             }
-
             SamsungPay.SPAY_NOT_READY -> {
                 jsonResult.setJsonResult(SamsungPayErrors.IS_NOT_READY.message, false)
                 callback.error(jsonResult)
             }
-
             SamsungPay.SPAY_READY -> {
-                jsonResult.setJsonResult(SamsungPayErrors.IS_READY.message, true)
+                jsonResult.setJsonResult(SamsungPayErrors.IS_READY.message,  true)
                 callback.success(jsonResult)
             }
         }
@@ -210,12 +189,7 @@ class SamsungPayPlugin : CordovaPlugin() {
 }
 
 // Used to able to se message and available to response callback plugin
-private fun JSONObject.setJsonResult(message: String, isAvailable: Boolean) {
-    put("message", message)
-    put("isAvailable", isAvailable)
-}
-
-private fun JSONObject.setJsonResultAddCard(message: String, success: Boolean) {
+private fun JSONObject.setJsonResult(message: String, success: Boolean) {
     put("message", message)
     put("success", success)
 }
