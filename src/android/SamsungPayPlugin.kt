@@ -12,7 +12,9 @@ import com.samsung.android.sdk.samsungpay.v2.card.AddCardListener
 import com.samsung.android.sdk.samsungpay.v2.card.Card
 import com.samsung.android.sdk.samsungpay.v2.card.CardManager
 import org.apache.cordova.CallbackContext;
+import org.apache.cordova.CordovaInterface
 import org.apache.cordova.CordovaPlugin;
+import org.apache.cordova.CordovaWebView
 import org.apache.cordova.PluginResult
 import org.json.JSONArray;
 import org.json.JSONObject
@@ -24,9 +26,19 @@ private const val ADD_CARD = "addCard"
 class SamsungPayPlugin : CordovaPlugin() {
 
     private var isSpayReady = false
-    private var serviceId = ""
     private lateinit var samsungPay: SamsungPay
     private lateinit var cardManager: CardManager
+
+    override fun initialize(cordova: CordovaInterface?, webView: CordovaWebView?) {
+        super.initialize(cordova, webView)
+
+        val serviceId = cordova?.activity?.getString(cordova.activity.resources.getIdentifier("app_service_id", "string", cordova.activity.packageName))
+        val bundle = Bundle()
+
+        bundle.putString(SamsungPay.PARTNER_SERVICE_TYPE, SpaySdk.ServiceType.APP2APP.toString())
+        val partnerInfo = PartnerInfo(serviceId, bundle)
+        samsungPay = SamsungPay(this.cordova.context, partnerInfo)
+    }
 
     override fun execute(
         action: String,
@@ -52,14 +64,7 @@ class SamsungPayPlugin : CordovaPlugin() {
         }
 
         if (action == CHECK_DEVICE_SUPPORT) {
-            val data: String = args.getString(0)
-            if (data.isNotEmpty()) {
-                serviceId = data
-                this.checkDeviceSupport(callbackContext)
-            } else {
-                callbackContext.error("ServiceId not found, please provide this argument")
-            }
-
+            this.checkDeviceSupport(callbackContext)
             return true
         }
 
@@ -67,11 +72,6 @@ class SamsungPayPlugin : CordovaPlugin() {
     }
 
     private fun checkDeviceSupport(callbackContext: CallbackContext) {
-        val bundle = Bundle()
-        bundle.putString(SamsungPay.PARTNER_SERVICE_TYPE, SpaySdk.ServiceType.APP2APP.toString())
-        val partnerInfo = PartnerInfo(serviceId, bundle)
-        samsungPay = SamsungPay(this.cordova.context, partnerInfo)
-
         val jsonResult = JSONObject()
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
             //Hide Samsung Pay button in this Android version

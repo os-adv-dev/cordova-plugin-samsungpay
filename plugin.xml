@@ -10,6 +10,13 @@
     </js-module>
     
     <platform name="android">
+
+        <preference name="APP_SERVICE_ID"/>
+        <preference name="APP_DEBUG_MODE" default="N"/>
+        <preference name="APP_DEBUG_API_KEY" default=""/>
+
+        <!-- Android HOOK tto change strings xml if variable received  -->
+       <!-- <hook type="after_plugin_install" src="hooks/afterPluginInstall.js"/> -->
         
         <config-file parent="/*" target="res/xml/config.xml">
             <feature name="SamsungPayPlugin">
@@ -51,8 +58,25 @@
             <meta-data
                 android:name="spay_sdk_api_level"
                 android:value="2.18" />
+
+            <meta-data
+                android:name="debug_mode"
+                android:value="@string/app_debug_mode" />
+            
+            <meta-data
+                android:name="spay_debug_api_key"
+                android:value="@string/app_spay_debug_api_key" />
         </config-file>
         <!-- END Edit AndroidManifest.xml -->
+
+        <!-- Variables Service ID -->
+        
+        <config-file target="res/values/strings.xml" parent="/*">
+            <string name="app_service_id">$APP_SERVICE_ID</string>
+            <string name="app_debug_mode">$APP_DEBUG_MODE</string>
+            <string name="app_spay_debug_api_key">$APP_DEBUG_API_KEY</string>
+        </config-file>
+        <!-- End Variables -->
 
     </platform>
 </plugin>
