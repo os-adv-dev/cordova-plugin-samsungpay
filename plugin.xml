@@ -18,7 +18,7 @@
         <!-- Android HOOK tto change strings xml if variable received  -->
        
        <!-- <hook type="after_plugin_install" src="hooks/afterPluginInstall.js"/>-->
-        <hook type="after_plugin_install" src="hooks/android_add_string.js"/>
+        <!-- <hook type="after_plugin_install" src="hooks/android_add_string.js"/>-->
         
         <config-file parent="/*" target="res/xml/config.xml">
             <feature name="SamsungPayPlugin">
