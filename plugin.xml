@@ -11,9 +11,9 @@
     
     <platform name="android">
 
-        <preference name="APP_SERVICE_ID" default=""/>
-        <preference name="APP_DEBUG_MODE" default="N"/>
-        <preference name="APP_DEBUG_API_KEY" default=""/>
+        <preference name="APP_SERVICE_ID"/>
+        <preference name="APP_DEBUG_MODE"/>
+        <preference name="APP_DEBUG_API_KEY"/>
 
         <!-- Android HOOK tto change strings xml if variable received  -->
        
