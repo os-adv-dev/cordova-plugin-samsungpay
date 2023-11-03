@@ -27,22 +27,28 @@ function addStringToXml() {
     }
 
     if (!serviceId) {
-        console.error('APP_SERVICE_ID not provided');
+        console.error('>>> APP_SERVICE_ID not provided');
         return;
     }
 
     if (!debugApiKey) {
-        console.error('APP_DEBUG_API_KEY not provided');
+        console.error('>>> APP_DEBUG_API_KEY not provided');
         return;
     }
 
     if (!debugMode) {
-        console.error('APP_DEBUG_MODE not provided');
+        console.error('>>> APP_DEBUG_MODE not provided');
         return;
     }
 
+    console.log(">>>>> Variable APP_SERVICE_ID: "+serviceId);
+    console.log(">>>>> Variable APP_DEBUG_API_KEY: "+debugApiKey);
+    console.log(">>>>> Variable APP_DEBUG_MODE: "+debugMode);
+
     // Path to strings.xml
     const stringXmlPath = path.join('platforms', 'android', 'app', 'src', 'main', 'res', 'values', 'strings.xml');
+
+    console.log(">>>>>> Path Strings XML : "+stringXmlPath);
 
     // Read and modify strings.xml
     fs.readFile(stringXmlPath, 'utf8', function(err, data) {
@@ -64,6 +70,8 @@ function addStringToXml() {
             }
             console.log('Updated values in strings.xml');
         });
+
+        console.log(">>>>>> Data updated: Strings XML : "+data);
     });
 }
 
