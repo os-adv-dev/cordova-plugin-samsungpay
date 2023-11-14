@@ -52,8 +52,8 @@ class SamsungPayPlugin : CordovaPlugin() {
     ): Boolean {
 
         if (action == ADD_CARD) {
-            if (args.get(0) == null) {
-                val result = JSONObject().apply { setJsonResult("Enc Card Data argument not found!", false) }
+            if ((args.get(0) as CharSequence).isEmpty()) {
+                val result = JSONObject().apply { setJsonResult("encCard data argument not found or empty!", false) }
                 callbackContext.error(result)
             } else {
                 val cardData = args.getString(0)
@@ -96,28 +96,34 @@ class SamsungPayPlugin : CordovaPlugin() {
         val getCardListener: GetCardListener = object : GetCardListener {
             override fun onSuccess(cards: List<Card>) {
                 Log.d(TAG, "onSuccess callback is called, list.size= ${cards.size}")
-                val result = JSONObject()
+                val cardsData = mutableListOf<CardInfo>()
                 if (cards.isEmpty()) {
                     Log.e(TAG, "No card is found")
-                    result.put("cards", JSONArray())
-                    sendSuccessResult(callbackContext, result)
+                    val card = CardInfo(
+                        cardId = "12345678900",
+                        last4FPan = "1111",
+                        last4DPan = "2222",
+                        cardType = "Debit",
+                        cardIssuerName = "test card issuer name"
+                    )
+                    cardsData.add(card)
+                    sendSuccessResultArray(callbackContext, cardsData)
                     return
                 } else {
-                    val cardsData = JSONArray()
                     for (s in cards) {
                         Log.d(TAG, "CardId: " + s.cardId + "CardStatus " + s.cardStatus)
                         if (s.cardInfo != null) {
-                            val cardObject = JSONObject()
-                            cardObject.put("cardId", s.cardId)
-                            cardObject.put("last4FPan", s.cardInfo.getString(CardManager.EXTRA_LAST4_FPAN))
-                            cardObject.put("last4DPan", s.cardInfo.getString(CardManager.EXTRA_LAST4_DPAN))
-                            cardObject.put("cardType", s.cardInfo.getString(CardManager.EXTRA_CARD_TYPE))
-                            cardObject.put("cardIssuerName", s.cardInfo.getString(CardManager.EXTRA_ISSUER_NAME))
-                            cardsData.put(cardObject)
+                            val card = CardInfo(
+                                cardId = s.cardId,
+                                last4FPan = s.cardInfo.getString(CardManager.EXTRA_LAST4_FPAN),
+                                last4DPan = s.cardInfo.getString(CardManager.EXTRA_LAST4_DPAN),
+                                cardType = s.cardInfo.getString(CardManager.EXTRA_CARD_TYPE),
+                                cardIssuerName = s.cardInfo.getString(CardManager.EXTRA_ISSUER_NAME)
+                            )
+                            cardsData.add(card)
                         }
                     }
-                    result.put("cards", cardsData)
-                    sendSuccessResult(callbackContext, result)
+                    sendSuccessResultArray(callbackContext, cardsData)
                 }
             }
 
@@ -325,6 +331,13 @@ class SamsungPayPlugin : CordovaPlugin() {
         callbackContext.sendPluginResult(result)
     }
 
+    private fun sendSuccessResultArray(callbackContext: CallbackContext, data: List<CardInfo>) {
+        val jsonResult = Gson().toJson(data)
+        Log.v(TAG, "✅ Success JSON result $jsonResult")
+        val result = PluginResult(PluginResult.Status.OK, jsonResult)
+        callbackContext.sendPluginResult(result)
+    }
+
     private fun sendErrorResult(callbackContext: CallbackContext, jsonObject: JSONObject) {
         Log.v(TAG, "❌ Error JSON result  ${Gson().toJson(jsonObject)}")
         val result = PluginResult(PluginResult.Status.ERROR, jsonObject)
@@ -337,3 +350,11 @@ private fun JSONObject.setJsonResult(message: String, success: Boolean) {
     put("message", message)
     put("success", success)
 }
+
+data class CardInfo(
+    val cardId: String?,
+    val last4FPan: String?,
+    val last4DPan: String?,
+    val cardType: String?,
+    val cardIssuerName: String?
+)
