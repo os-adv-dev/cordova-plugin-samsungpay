@@ -20,6 +20,7 @@ import org.apache.cordova.CordovaWebView
 import org.apache.cordova.PluginResult
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.Serializable
 
 
 private const val TAG = "SamsungPayPlugin"
@@ -95,23 +96,12 @@ class SamsungPayPlugin : CordovaPlugin() {
     private fun getAllCards(callbackContext: CallbackContext) {
         val getCardListener: GetCardListener = object : GetCardListener {
             override fun onSuccess(cards: List<Card>) {
-                Log.d(TAG, "onSuccess callback is called, list.size= ${cards.size}")
                 val cardsData = mutableListOf<CardInfo>()
                 if (cards.isEmpty()) {
-                    Log.e(TAG, "No card is found")
-                    val card = CardInfo(
-                        cardId = "12345678900",
-                        last4FPan = "1111",
-                        last4DPan = "2222",
-                        cardType = "Debit",
-                        cardIssuerName = "test card issuer name"
-                    )
-                    cardsData.add(card)
                     sendSuccessResultArray(callbackContext, cardsData)
                     return
                 } else {
                     for (s in cards) {
-                        Log.d(TAG, "CardId: " + s.cardId + "CardStatus " + s.cardStatus)
                         if (s.cardInfo != null) {
                             val card = CardInfo(
                                 cardId = s.cardId,
@@ -128,7 +118,6 @@ class SamsungPayPlugin : CordovaPlugin() {
             }
 
             override fun onFail(errorCode: Int, errorData: Bundle) {
-                Log.d(TAG, "onFail callback is called, errorCode:$errorCode")
                 val jsonResult = JSONObject().apply { setJsonResult("Error to getAllCards", false) }
                 sendErrorResult(callbackContext, jsonResult)
             }
@@ -148,22 +137,17 @@ class SamsungPayPlugin : CordovaPlugin() {
     private fun checkDeviceSupport(callbackContext: CallbackContext) {
         val jsonResult = JSONObject()
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-            //Hide Samsung Pay button in this Android version
             jsonResult.setJsonResult(SamsungPayErrors.NOT_SUPPORTED.message, false)
             callbackContext.error(jsonResult)
         } else {
             val statusListener: StatusListener = object : StatusListener {
                 override fun onSuccess(status: Int, bundle: Bundle) {
-                    Log.d(TAG, "onSuccess callback is called, status=$status,bundle:$bundle")
                     isSpayReady = status == SpaySdk.SPAY_READY
-                    Log.v(TAG, "Status: $status - bundle: $bundle")
                     setCallbackOnSuccessStatusListener(jsonResult, status, callbackContext)
                 }
 
                 override fun onFail(errorCode: Int, bundle: Bundle) {
-                    Log.d(TAG, "onFail callback is called, i=$errorCode,bundle:$bundle")
                     isSpayReady = false
-                    Log.v(TAG, "errorCode: $errorCode - bundle: $bundle")
                     jsonResult.setJsonResult("Error to check samsung pay status", false)
                     sendErrorResult(callbackContext, jsonResult)
                 }
@@ -228,9 +212,6 @@ class SamsungPayPlugin : CordovaPlugin() {
                 // VISA requires DEVICE_ID for clientDeviceId, WALLET_USER_ID for walletAccountId. Please refer VISA spec document.
                 val clientDeviceId: String? = walletData.getString(SamsungPay.DEVICE_ID)
                 val clientWalletAccountId: String? = walletData.getString(SamsungPay.WALLET_USER_ID)
-                // Set clientDeviceId & clientWalletAccountId with values from Samsung Pay
-                println("clientDeviceId:  $clientDeviceId")
-                println("walletAccountId:  $clientWalletAccountId")
 
                 val result = JSONObject()
                 if (clientDeviceId == null && clientWalletAccountId == null) {
@@ -280,13 +261,10 @@ class SamsungPayPlugin : CordovaPlugin() {
         cardDetail.putBoolean(AddCardInfo.EXTRA_SAMSUNG_PAY_CARD, false)
         cardDetail.putString(AddCardInfo.EXTRA_PROVISION_PAYLOAD, payloadEncrypted)
 
-        Log.d(TAG, "addCard payload : $payloadEncrypted, tokenizationProvider : $tokenizationProvider")
-
         val addCardInfo = AddCardInfo(cardType, tokenizationProvider, cardDetail)
 
         val addCardListener: AddCardListener = object : AddCardListener {
             override fun onSuccess(status: Int, card: Card) {
-                Log.d(TAG, "doAddCard onSuccess callback is called")
                 val result = JSONObject().apply {
                     put("message", "Card added successfully!")
                     put("success", true)
@@ -303,9 +281,6 @@ class SamsungPayPlugin : CordovaPlugin() {
                     put("message", messageError)
                     put("success", false)
                 }
-
-                println("❌ Error code: $errorCode")
-                println("❌ Error errorName: $errorName")
 
                 sendErrorResult(callbackContext, result)
             }
@@ -326,20 +301,17 @@ class SamsungPayPlugin : CordovaPlugin() {
     }
 
     private fun sendSuccessResult(callbackContext: CallbackContext, jsonObject: JSONObject) {
-        Log.v(TAG, "✅ Success JSON result ${Gson().toJson(jsonObject)}")
         val result = PluginResult(PluginResult.Status.OK, jsonObject)
         callbackContext.sendPluginResult(result)
     }
 
     private fun sendSuccessResultArray(callbackContext: CallbackContext, data: List<CardInfo>) {
         val jsonResult = Gson().toJson(data)
-        Log.v(TAG, "✅ Success JSON result $jsonResult")
         val result = PluginResult(PluginResult.Status.OK, jsonResult)
         callbackContext.sendPluginResult(result)
     }
 
     private fun sendErrorResult(callbackContext: CallbackContext, jsonObject: JSONObject) {
-        Log.v(TAG, "❌ Error JSON result  ${Gson().toJson(jsonObject)}")
         val result = PluginResult(PluginResult.Status.ERROR, jsonObject)
         callbackContext.sendPluginResult(result)
     }
