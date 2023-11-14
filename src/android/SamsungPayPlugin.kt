@@ -3,6 +3,7 @@ package com.outsystems.experts.samsungpay
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import com.google.gson.Gson
 import com.samsung.android.sdk.samsungpay.v2.PartnerInfo
 import com.samsung.android.sdk.samsungpay.v2.SamsungPay
 import com.samsung.android.sdk.samsungpay.v2.SpaySdk
@@ -319,11 +320,13 @@ class SamsungPayPlugin : CordovaPlugin() {
     }
 
     private fun sendSuccessResult(callbackContext: CallbackContext, jsonObject: JSONObject) {
+        Log.v(TAG, "✅ Success JSON result ${Gson().toJson(jsonObject)}")
         val result = PluginResult(PluginResult.Status.OK, jsonObject)
         callbackContext.sendPluginResult(result)
     }
 
     private fun sendErrorResult(callbackContext: CallbackContext, jsonObject: JSONObject) {
+        Log.v(TAG, "❌ Error JSON result  ${Gson().toJson(jsonObject)}")
         val result = PluginResult(PluginResult.Status.ERROR, jsonObject)
         callbackContext.sendPluginResult(result)
     }
