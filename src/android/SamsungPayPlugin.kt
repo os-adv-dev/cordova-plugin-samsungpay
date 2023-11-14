@@ -1,4 +1,4 @@
-package com.outsystems.experts.samsungpay;
+package com.outsystems.experts.samsungpay
 
 import android.os.Build
 import android.os.Bundle
@@ -11,32 +11,35 @@ import com.samsung.android.sdk.samsungpay.v2.card.AddCardInfo
 import com.samsung.android.sdk.samsungpay.v2.card.AddCardListener
 import com.samsung.android.sdk.samsungpay.v2.card.Card
 import com.samsung.android.sdk.samsungpay.v2.card.CardManager
-import org.apache.cordova.CallbackContext;
+import com.samsung.android.sdk.samsungpay.v2.card.GetCardListener
+import org.apache.cordova.CallbackContext
 import org.apache.cordova.CordovaInterface
-import org.apache.cordova.CordovaPlugin;
+import org.apache.cordova.CordovaPlugin
 import org.apache.cordova.CordovaWebView
 import org.apache.cordova.PluginResult
-import org.json.JSONArray;
+import org.json.JSONArray
 import org.json.JSONObject
-import java.util.ArrayList
+
 
 private const val TAG = "SamsungPayPlugin"
 private const val CHECK_DEVICE_SUPPORT = "checkDeviceSupport"
+private const val GET_WALLET_INFO = "getWalletInfo"
+private const val GET_ALL_CARDS = "getAllCards"
 private const val ADD_CARD = "addCard"
 
 class SamsungPayPlugin : CordovaPlugin() {
 
     private var isSpayReady = false
     private lateinit var samsungPay: SamsungPay
-    private lateinit var cardManager: CardManager
 
     override fun initialize(cordova: CordovaInterface?, webView: CordovaWebView?) {
         super.initialize(cordova, webView)
 
         val serviceId = cordova?.activity?.getString(cordova.activity.resources.getIdentifier("app_service_id", "string", cordova.activity.packageName))
         val bundle = Bundle()
-
+        bundle.putString(SamsungPay.EXTRA_ISSUER_NAME, "Al Salam Bank")
         bundle.putString(SamsungPay.PARTNER_SERVICE_TYPE, SpaySdk.ServiceType.APP2APP.toString())
+
         val partnerInfo = PartnerInfo(serviceId, bundle)
         samsungPay = SamsungPay(this.cordova.context, partnerInfo)
     }
@@ -48,15 +51,13 @@ class SamsungPayPlugin : CordovaPlugin() {
     ): Boolean {
 
         if (action == ADD_CARD) {
-
-            if (args.get(0) != null) {
-                val result = JSONObject().apply { setJsonResult("CardIndo argument not found!", false) }
+            if (args.get(0) == null) {
+                val result = JSONObject().apply { setJsonResult("Enc Card Data argument not found!", false) }
                 callbackContext.error(result)
             } else {
                 val cardData = args.getString(0)
-                this.addCard(callbackContext, cardData)
+                this.requestAddCard(callbackContext, cardData)
             }
-
             return true
         }
 
@@ -65,7 +66,76 @@ class SamsungPayPlugin : CordovaPlugin() {
             return true
         }
 
+        if (action == GET_WALLET_INFO) {
+            this.requestGetWalletInfo(callbackContext)
+            return true
+        }
+
+        if (action == GET_ALL_CARDS) {
+            this.requestGetAllCards(callbackContext)
+            return true
+        }
+
         return false
+    }
+
+    private fun requestGetAllCards(callbackContext: CallbackContext) {
+        if (!isSpayReady) {
+            val result = JSONObject().apply {
+                put("message", SamsungPayErrors.ADD_CARD_ERROR_INIT.message)
+                put("success", false)
+            }
+            sendErrorResult(callbackContext, result)
+        } else {
+            getAllCards(callbackContext)
+        }
+    }
+
+    private fun getAllCards(callbackContext: CallbackContext) {
+        val getCardListener: GetCardListener = object : GetCardListener {
+            override fun onSuccess(cards: List<Card>) {
+                Log.d(TAG, "onSuccess callback is called, list.size= ${cards.size}")
+                val result = JSONObject()
+                if (cards.isEmpty()) {
+                    Log.e(TAG, "No card is found")
+                    result.put("cards", JSONArray())
+                    sendSuccessResult(callbackContext, result)
+                    return
+                } else {
+                    val cardsData = JSONArray()
+                    for (s in cards) {
+                        Log.d(TAG, "CardId: " + s.cardId + "CardStatus " + s.cardStatus)
+                        if (s.cardInfo != null) {
+                            val cardObject = JSONObject()
+                            cardObject.put("cardId", s.cardId)
+                            cardObject.put("last4FPan", s.cardInfo.getString(CardManager.EXTRA_LAST4_FPAN))
+                            cardObject.put("last4DPan", s.cardInfo.getString(CardManager.EXTRA_LAST4_DPAN))
+                            cardObject.put("cardType", s.cardInfo.getString(CardManager.EXTRA_CARD_TYPE))
+                            cardObject.put("cardIssuerName", s.cardInfo.getString(CardManager.EXTRA_ISSUER_NAME))
+                            cardsData.put(cardObject)
+                        }
+                    }
+                    result.put("cards", cardsData)
+                    sendSuccessResult(callbackContext, result)
+                }
+            }
+
+            override fun onFail(errorCode: Int, errorData: Bundle) {
+                Log.d(TAG, "onFail callback is called, errorCode:$errorCode")
+                val jsonResult = JSONObject().apply { setJsonResult("Error to getAllCards", false) }
+                sendErrorResult(callbackContext, jsonResult)
+            }
+        }
+
+        val serviceId = cordova?.activity?.getString(cordova.activity.resources.getIdentifier("app_service_id", "string", cordova.activity.packageName))
+        val bundle = Bundle()
+        bundle.putString(SamsungPay.PARTNER_SERVICE_TYPE, SpaySdk.ServiceType.APP2APP.toString())
+        val pInfo = PartnerInfo(serviceId, bundle)
+
+        val cardManager = CardManager(this.cordova.context, pInfo)
+        val cardFilter = Bundle()
+        cardFilter.putString(SamsungPay.EXTRA_ISSUER_NAME, "Al Salam Bank")
+        cardManager.getAllCards(cardFilter, getCardListener)
     }
 
     private fun checkDeviceSupport(callbackContext: CallbackContext) {
@@ -78,7 +148,7 @@ class SamsungPayPlugin : CordovaPlugin() {
             val statusListener: StatusListener = object : StatusListener {
                 override fun onSuccess(status: Int, bundle: Bundle) {
                     Log.d(TAG, "onSuccess callback is called, status=$status,bundle:$bundle")
-                    isSpayReady = status == SpaySdk.SPAY_READY // update ready status
+                    isSpayReady = status == SpaySdk.SPAY_READY
                     Log.v(TAG, "Status: $status - bundle: $bundle")
                     setCallbackOnSuccessStatusListener(jsonResult, status, callbackContext)
                 }
@@ -87,6 +157,8 @@ class SamsungPayPlugin : CordovaPlugin() {
                     Log.d(TAG, "onFail callback is called, i=$errorCode,bundle:$bundle")
                     isSpayReady = false
                     Log.v(TAG, "errorCode: $errorCode - bundle: $bundle")
+                    jsonResult.setJsonResult("Error to check samsung pay status", false)
+                    sendErrorResult(callbackContext, jsonResult)
                 }
             }
 
@@ -115,7 +187,7 @@ class SamsungPayPlugin : CordovaPlugin() {
         }
     }
 
-    private fun addCard(callbackContext: CallbackContext, cardInfo: String) {
+    private fun requestAddCard(callbackContext: CallbackContext, cardInfo: String) {
         if (!isSpayReady) {
             val result = JSONObject().apply {
                 put("message", SamsungPayErrors.ADD_CARD_ERROR_INIT.message)
@@ -123,28 +195,50 @@ class SamsungPayPlugin : CordovaPlugin() {
             }
             sendErrorResult(callbackContext, result)
         } else {
-            val serviceId = cordova?.activity?.getString(cordova.activity.resources.getIdentifier("app_service_id", "string", cordova.activity.packageName))
-            val partnerInfo = PartnerInfo(serviceId)
-            cardManager = CardManager(this.cordova.context, partnerInfo)
-            requestGetWalletInfo(callbackContext, cardInfo)
+            prepareAddCardToWallet(callbackContext, cardInfo)
         }
     }
 
-    private fun requestGetWalletInfo(callbackContext: CallbackContext, cardInfo: String) {
+    private fun requestGetWalletInfo(callbackContext: CallbackContext) {
+        if (!isSpayReady) {
+            val result = JSONObject().apply {
+                put("message", SamsungPayErrors.ADD_CARD_ERROR_INIT.message)
+                put("success", false)
+            }
+            sendErrorResult(callbackContext, result)
+        } else {
+            getWalletInfo(callbackContext)
+        }
+    }
+
+    private fun getWalletInfo(callbackContext: CallbackContext) {
         val keys = ArrayList<String>()
         keys.add(SamsungPay.WALLET_DM_ID)
         keys.add(SamsungPay.DEVICE_ID)
         keys.add(SamsungPay.WALLET_USER_ID)
         val statusListener: StatusListener = object : StatusListener {
             override fun onSuccess(status: Int, walletData: Bundle) {
-                // VISA requires DEVICE_ID for deviceID, WALLET_USER_ID for walletAccountId. Please refer VISA spec document.
+                // VISA requires DEVICE_ID for clientDeviceId, WALLET_USER_ID for walletAccountId. Please refer VISA spec document.
                 val clientDeviceId: String? = walletData.getString(SamsungPay.DEVICE_ID)
                 val clientWalletAccountId: String? = walletData.getString(SamsungPay.WALLET_USER_ID)
                 // Set clientDeviceId & clientWalletAccountId with values from Samsung Pay
+                println("clientDeviceId:  $clientDeviceId")
+                println("walletAccountId:  $clientWalletAccountId")
 
-                val payloadEncrypted = "eyJ0eXAiOiJKT1NFIiwiZW5jIjoiQTI1NkdDTSIsImlhdCI6MTY5OTgyNTUyOCwiYWxnIjoiUlNBLU9BRVAtMjU2Iiwia2lkIjoiNzUxYzA0ZmMtMGY0NS00MWQzLTljZjAtZGI2Zjk1ZGU2NzVlIn0.XYEt8Up-EuLGGjZGdazaKhAG50jFZD917tKY1HYvGQjtSlCp3oN9hMO0UQM-w5NzSJZgu6Xx3oUxv2vAh4rFkTzr8sjC4fqklJy05iPyRx5nlay4JwEsqqk6-ixuN4VLjCwbVXCqF9ZRkwnirqyONMu5Td9ggW9LsHqXsV7YEnSmXpRqrcfxrMTChp2oO5d5dkgJhSl46N79PmZxACTI__RMtrRjXf4tmVPf3Mn_B25J_pG8GuNEtRHaqd0oS_kUcn3FtyMSqVnIMjvznAmDdJ6iwjejYD2yogmzO1OeVY5AU-YxI4KUsi3N0Gvg2v9vVDFe_t4Vl30iOWS4xV64zg.7g5EhiS5ZDVsE-Lx.JHi7gtA0kQ6JeT9RMwQnl5ip2CDSZuMwq17NNpCE8O2TLZe3hNkLcnBJ0mekCXkOpRqYzMgCqNf9mB0ZaA-IqJ6Pt2N26ly-U-pdhDDjG5U0n9RP9mo9UQZeTf68nICDNqDl1JusaexAK0bAbFR8T82Oe2_HVp7oEB_FcK-HOldC2cNrQMlvq5sAyuRLifjjSplFmVA7snqklu_gIyF9sr0k3No9FNnrAka7RsCFxWd3q5BC6jVAzBCPBMVmB47K986pMs64SRSdT9zVGfVOq-1273U53CIxHSKNxO_pxC-MFp97BGWH5bpsiCbBYUig3qWFSboIIJuRj5jBr5aLEQRIzT3bE_Fr_EPTkxA_C75axHCXQboG21jWKfx1SBWaHZZwG1QzhRVagMbiEdgHXKBssQ_NyGZqV3UmGomQ0bYocLrEXCnKaVmJHrTSTW7mqocJnl6N_8g5eB-pPs-lgPUbvqgCC35Cg6JLYv8T6Xp4s3_PfioCwA86iNpPf6yiAijMX7Ul8MZ0EhsdRH5WIjlujTHG2Wr02IB5Ob9byw.f9tV3hoHkHBwcFvA4L9qtg"
+                val result = JSONObject()
+                if (clientDeviceId == null && clientWalletAccountId == null) {
+                    result.apply {
+                        put("message", "Error to get the getWalletInfo (clientDeviceId & walletAccountId)")
+                        put("success", false)
+                    }
+                } else {
+                    result.apply {
+                        put("clientDeviceId", clientDeviceId)
+                        put("walletAccountId", clientWalletAccountId)
+                    }
+                }
 
-                prepareAddCardToWallet(cardManager, callbackContext, payloadEncrypted)
+                sendSuccessResult(callbackContext, result)
             }
 
             override fun onFail(errorCode: Int, errorData: Bundle?) {
@@ -160,17 +254,23 @@ class SamsungPayPlugin : CordovaPlugin() {
             }
         }
 
+        val serviceId = cordova?.activity?.getString(cordova.activity.resources.getIdentifier("app_service_id", "string", cordova.activity.packageName))
+        val bundle = Bundle()
+        bundle.putString(SamsungPay.EXTRA_ISSUER_NAME, "Al Salam Bank")
+        bundle.putString(SamsungPay.PARTNER_SERVICE_TYPE, SpaySdk.ServiceType.APP2APP.toString())
+        val pInfo = PartnerInfo(serviceId, bundle)
+        val samsungPay = SamsungPay(this.cordova.context, pInfo)
         samsungPay.getWalletInfo(keys, statusListener)
     }
 
     private fun prepareAddCardToWallet(
-        cardManager: CardManager,
         callbackContext: CallbackContext,
         payloadEncrypted: String
     ) {
         val tokenizationProvider = AddCardInfo.PROVIDER_VISA
-        val cardType = Card.CARD_TYPE_CREDIT_DEBIT
+        val cardType = Card.CARD_TYPE_DEBIT
         val cardDetail = Bundle()
+        cardDetail.putBoolean(AddCardInfo.EXTRA_SAMSUNG_PAY_CARD, false)
         cardDetail.putString(AddCardInfo.EXTRA_PROVISION_PAYLOAD, payloadEncrypted)
 
         Log.d(TAG, "addCard payload : $payloadEncrypted, tokenizationProvider : $tokenizationProvider")
@@ -189,12 +289,16 @@ class SamsungPayPlugin : CordovaPlugin() {
 
             override fun onFail(errorCode: Int, errorData: Bundle) {
                 val result = JSONObject()
-                val messageError = errorData.getString(SpaySdk.EXTRA_ERROR_REASON_MESSAGE) ?: "Error to get walletInfo"
+                val errorName = ErrorCode.getErrorCodeName(errorCode)
+                val messageError = errorData.getString(SpaySdk.EXTRA_ERROR_REASON_MESSAGE) ?: "Error msg: $errorName - $errorCode"
 
                 result.apply {
                     put("message", messageError)
                     put("success", false)
                 }
+
+                println("❌ Error code: $errorCode")
+                println("❌ Error errorName: $errorName")
 
                 sendErrorResult(callbackContext, result)
             }
@@ -204,6 +308,13 @@ class SamsungPayPlugin : CordovaPlugin() {
             }
         }
 
+        val serviceId = cordova?.activity?.getString(cordova.activity.resources.getIdentifier("app_service_id", "string", cordova.activity.packageName))
+        val bundle = Bundle()
+        bundle.putString(SamsungPay.EXTRA_ISSUER_NAME, "Al Salam Bank")
+        bundle.putString(SamsungPay.PARTNER_SERVICE_TYPE, SpaySdk.ServiceType.APP2APP.toString())
+
+        val partnerInfo = PartnerInfo(serviceId, bundle)
+        val cardManager = CardManager(this.cordova.context, partnerInfo)
         cardManager.addCard(addCardInfo, addCardListener)
     }
 
