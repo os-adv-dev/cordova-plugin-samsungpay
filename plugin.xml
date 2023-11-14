@@ -29,6 +29,7 @@
         <config-file parent="/*" target="AndroidManifest.xml" />
         <source-file src="src/android/SamsungPayPlugin.kt" target-dir="app/src/main/kotlin/com/outsystems/experts/samsungpay/" />
         <source-file src="src/android/SamsungPayErrors.kt" target-dir="app/src/main/kotlin/com/outsystems/experts/samsungpay/" />
+        <source-file src="src/android/ErrorCode.kt" target-dir="app/src/main/kotlin/com/outsystems/experts/samsungpay/" />
          
         <!-- SDK Files -->
         <framework src="src/android/build.gradle" custom="true" type="gradleReference" />
