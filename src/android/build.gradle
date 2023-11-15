@@ -8,4 +8,5 @@ allprojects {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation files('libs/SamsungPaySDK_2.18.00_release.jar')
+    implementation 'com.google.code.gson:gson:2.10'
 }

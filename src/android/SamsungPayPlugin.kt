@@ -7,6 +7,7 @@ import com.google.gson.Gson
 import com.samsung.android.sdk.samsungpay.v2.PartnerInfo
 import com.samsung.android.sdk.samsungpay.v2.SamsungPay
 import com.samsung.android.sdk.samsungpay.v2.SpaySdk
+import com.samsung.android.sdk.samsungpay.v2.SpaySdk.ServiceType
 import com.samsung.android.sdk.samsungpay.v2.StatusListener
 import com.samsung.android.sdk.samsungpay.v2.card.AddCardInfo
 import com.samsung.android.sdk.samsungpay.v2.card.AddCardListener
@@ -20,7 +21,6 @@ import org.apache.cordova.CordovaWebView
 import org.apache.cordova.PluginResult
 import org.json.JSONArray
 import org.json.JSONObject
-import java.io.Serializable
 
 
 private const val TAG = "SamsungPayPlugin"
@@ -32,18 +32,17 @@ private const val ADD_CARD = "addCard"
 class SamsungPayPlugin : CordovaPlugin() {
 
     private var isSpayReady = false
-    private lateinit var samsungPay: SamsungPay
+    private var appIssuerName: String? = null
+    private var appServiceType: String? = null
+    private var serviceId: String? = null
 
     override fun initialize(cordova: CordovaInterface?, webView: CordovaWebView?) {
         super.initialize(cordova, webView)
 
-        val serviceId = cordova?.activity?.getString(cordova.activity.resources.getIdentifier("app_service_id", "string", cordova.activity.packageName))
-        val bundle = Bundle()
-        bundle.putString(SamsungPay.EXTRA_ISSUER_NAME, "Al Salam Bank")
-        bundle.putString(SamsungPay.PARTNER_SERVICE_TYPE, SpaySdk.ServiceType.APP2APP.toString())
-
-        val partnerInfo = PartnerInfo(serviceId, bundle)
-        samsungPay = SamsungPay(this.cordova.context, partnerInfo)
+        // Get the issuer name, service type and service id (Partner ID) provided by Samsung Developer Portal
+        serviceId = cordova?.activity?.getString(cordova.activity.resources.getIdentifier("app_service_id", "string", cordova.activity.packageName))
+        appIssuerName = cordova?.activity?.getString(cordova.activity.resources.getIdentifier("app_issuer_name", "string", cordova.activity.packageName))
+        appServiceType = cordova?.activity?.getString(cordova.activity.resources.getIdentifier("app_service_type", "string", cordova.activity.packageName))
     }
 
     override fun execute(
@@ -51,6 +50,33 @@ class SamsungPayPlugin : CordovaPlugin() {
         args: JSONArray,
         callbackContext: CallbackContext
     ): Boolean {
+
+        if (serviceId == null) {
+            val result = JSONObject().apply { setJsonResult("APP_SERVICE_ID cannot be null, please check your extensibility configurations", false) }
+            callbackContext.error(result)
+            return true
+        }
+
+        if (appIssuerName == null) {
+            val result = JSONObject().apply { setJsonResult("APP_ISSUER_NAME cannot be null, please check your extensibility configurations", false) }
+            callbackContext.error(result)
+            return true
+        }
+
+        if (appServiceType == null) {
+            val result = JSONObject().apply { setJsonResult("APP_SERVICE_TYPE cannot be null, please check your extensibility configurations", false) }
+            callbackContext.error(result)
+            return true
+        } else  {
+            try {
+                val serviceType = ServiceType.valueOf(appServiceType.toString())
+                println("Service Type is valid: $serviceType")
+            } catch (ex: Exception) {
+                val result = JSONObject().apply { setJsonResult("APP_SERVICE_TYPE is invalid value, please check your extensibility configurations or Samsung Developer section ServiceType Enum", false) }
+                callbackContext.error(result)
+                return true
+            }
+        }
 
         if (action == ADD_CARD) {
             if ((args.get(0) as CharSequence).isEmpty()) {
@@ -123,14 +149,13 @@ class SamsungPayPlugin : CordovaPlugin() {
             }
         }
 
-        val serviceId = cordova?.activity?.getString(cordova.activity.resources.getIdentifier("app_service_id", "string", cordova.activity.packageName))
         val bundle = Bundle()
-        bundle.putString(SamsungPay.PARTNER_SERVICE_TYPE, SpaySdk.ServiceType.APP2APP.toString())
+        bundle.putString(SamsungPay.PARTNER_SERVICE_TYPE, appServiceType)
         val pInfo = PartnerInfo(serviceId, bundle)
 
         val cardManager = CardManager(this.cordova.context, pInfo)
         val cardFilter = Bundle()
-        cardFilter.putString(SamsungPay.EXTRA_ISSUER_NAME, "Al Salam Bank")
+        cardFilter.putString(SamsungPay.EXTRA_ISSUER_NAME, appIssuerName)
         cardManager.getAllCards(cardFilter, getCardListener)
     }
 
@@ -152,6 +177,13 @@ class SamsungPayPlugin : CordovaPlugin() {
                     sendErrorResult(callbackContext, jsonResult)
                 }
             }
+
+            val bundle = Bundle()
+            bundle.putString(SamsungPay.EXTRA_ISSUER_NAME, appIssuerName)
+            bundle.putString(SamsungPay.PARTNER_SERVICE_TYPE, appServiceType)
+
+            val partnerInfo = PartnerInfo(serviceId, bundle)
+            val samsungPay = SamsungPay(this.cordova.context, partnerInfo)
 
             samsungPay.getSamsungPayStatus(statusListener)
         }
@@ -242,10 +274,10 @@ class SamsungPayPlugin : CordovaPlugin() {
             }
         }
 
-        val serviceId = cordova?.activity?.getString(cordova.activity.resources.getIdentifier("app_service_id", "string", cordova.activity.packageName))
         val bundle = Bundle()
-        bundle.putString(SamsungPay.EXTRA_ISSUER_NAME, "Al Salam Bank")
-        bundle.putString(SamsungPay.PARTNER_SERVICE_TYPE, SpaySdk.ServiceType.APP2APP.toString())
+        bundle.putString(SamsungPay.EXTRA_ISSUER_NAME, appIssuerName)
+        bundle.putString(SamsungPay.PARTNER_SERVICE_TYPE, appServiceType)
+
         val pInfo = PartnerInfo(serviceId, bundle)
         val samsungPay = SamsungPay(this.cordova.context, pInfo)
         samsungPay.getWalletInfo(keys, statusListener)
@@ -290,10 +322,9 @@ class SamsungPayPlugin : CordovaPlugin() {
             }
         }
 
-        val serviceId = cordova?.activity?.getString(cordova.activity.resources.getIdentifier("app_service_id", "string", cordova.activity.packageName))
         val bundle = Bundle()
-        bundle.putString(SamsungPay.EXTRA_ISSUER_NAME, "Al Salam Bank")
-        bundle.putString(SamsungPay.PARTNER_SERVICE_TYPE, SpaySdk.ServiceType.APP2APP.toString())
+        bundle.putString(SamsungPay.EXTRA_ISSUER_NAME, appIssuerName)
+        bundle.putString(SamsungPay.PARTNER_SERVICE_TYPE, appServiceType)
 
         val partnerInfo = PartnerInfo(serviceId, bundle)
         val cardManager = CardManager(this.cordova.context, partnerInfo)

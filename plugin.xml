@@ -14,6 +14,8 @@
         <preference name="APP_SERVICE_ID"/>
         <preference name="APP_DEBUG_MODE"/>
         <preference name="APP_DEBUG_API_KEY"/>
+        <preference name="APP_ISSUER_NAME"/>
+        <preference name="APP_SERVICE_TYPE"/>
 
         <!-- Android HOOK tto change strings xml if variable received  -->
        
@@ -73,11 +75,12 @@
         <!-- END Edit AndroidManifest.xml -->
 
         <!-- Variables Service ID -->
-        
        <config-file target="res/values/strings.xml" parent="/*">
             <string name="app_service_id">$APP_SERVICE_ID</string>
             <string name="app_debug_mode">$APP_DEBUG_MODE</string>
             <string name="app_spay_debug_api_key">$APP_DEBUG_API_KEY</string>
+            <string name="app_issuer_name">$APP_ISSUER_NAME</string>
+            <string name="app_service_type">$APP_SERVICE_TYPE</string>
         </config-file>
         <!-- End Variables -->
 
