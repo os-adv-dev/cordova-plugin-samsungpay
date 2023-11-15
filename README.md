@@ -10,6 +10,19 @@ To install the plugin, use the following command in your Cordova project:
 cordova plugin add https://github.com/os-adv-dev/cordova-plugin-samsungpay.git --variable APP_SERVICE_ID="YOUR_APP_SERVICE_ID" --variable APP_DEBUG_MODE="Y or N" --variable APP_DEBUG_API_KEY="YOUR_DEBUG_API_KEY" --variable APP_ISSUER_NAME="YOUR_ISSUER_NAME" --variable APP_SERVICE_TYPE="YOUR_SERVICE_TYPE"
 ```
 
+## Service Types
+
+When installing the plugin, you must specify the `APP_SERVICE_TYPE` variable according to the Samsung Pay service you intend to use. Below are the available service types:
+
+- `APP2APP` - Service type for using Issuer service.
+- `INAPP_PAYMENT` - Service type for using Online in-app payment service.
+- `INTERNAL_APK` - Service type for using Samsung Pay internal service.
+- `MOBILEWEB_PAYMENT` - Service type for using Mobile web payment service.
+- `W3C` - Service type for using W3C payment service.
+- `WEB_PAYMENT` - Service type for using Web payment service.
+
+Please refer to the Samsung Pay API Reference for detailed information: [Samsung Pay API](https://developer.samsung.com/pay/api-reference/com/samsung/android/sdk/samsungpay/v2/SpaySdk.ServiceType.html)
+
 Replace the placeholders with your actual configuration values above.
 
 ## Methods
